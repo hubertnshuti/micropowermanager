@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PluginAccess {
     public function handle(Request $request, callable $next): Response {
-        if (!app(PluginsService::class)->isPluginActive(MpmPlugin::LIBRE_SOLAR_BMS)) {
+        if (!resolve(PluginsService::class)->isPluginActive(MpmPlugin::LIBRE_SOLAR_BMS)) {
             throw new LibreSolarBmsException('plugin_disabled', 403);
         }
         if ($request->is('api/libre-solar-bms/batteries*')) {
