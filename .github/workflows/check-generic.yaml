@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - main
+      - team/bms-monitoring
 
 jobs:
   editorconfig-checker:
