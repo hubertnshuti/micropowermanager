@@ -191,3 +191,4 @@ The UI must age the accepted check independently and label source status separat
 Backend fixture tests cover these transitions, but the current gateway adapter lacks durable HTTP retry, event receipts and source-status delivery.
 Those adapter features and an actual lost-response retry remain integration work requiring compatible gateway behavior.
 Do not interpret backend fixture success as proof those gateway features exist.
+See the [backend handover](libre-solar-bms-handover.md) for separate real simulator delivery evidence and remaining integration limits.
