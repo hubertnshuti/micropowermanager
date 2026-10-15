@@ -6,6 +6,7 @@ use App\Http\Middleware\BasicAuthMiddleware;
 use App\Http\Middleware\Transaction;
 use App\Http\Middleware\TransactionRequest;
 use App\Http\Middleware\UserDefaultDatabaseConnectionMiddleware;
+use App\Plugins\LibreSolarBms\Http\Middleware\ValidateIngestionRequest;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->prepend(ValidateIngestionRequest::class);
         $middleware->append(UserDefaultDatabaseConnectionMiddleware::class);
 
         $middleware->alias([

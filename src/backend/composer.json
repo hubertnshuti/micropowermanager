@@ -27,6 +27,7 @@
     "laravel/ui": "^4.0",
     "lcobucci/jwt": "^4.3",
     "league/flysystem-google-cloud-storage": "^3.0",
+    "opis/json-schema": "2.6.0",
     "parsecsv/php-parsecsv": "^1.3",
     "phpoffice/phpspreadsheet": "^2.3",
     "predis/predis": "^1.1.7",

@@ -1,0 +1,267 @@
+{
+  "repository": "https://github.com/hubertnshuti/oseas26-libre-solar-bms-monitoring-gateway",
+  "commit": "66a4fbcf1bdda6dd008de45f8f95455408678f45",
+  "status": "proposed; owner reviews pending",
+  "files": [
+    {
+      "source": "lib/contract/schema/attributes.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/attributes.schema.json",
+      "sha256": "0256829b041dc084e20d651418aa2eaa2e7a78ecfcf6056b9b5d091f1a6fe006"
+    },
+    {
+      "source": "lib/contract/schema/common.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/common.schema.json",
+      "sha256": "6c30f14e9bc70713e56681e933eeaa6a238320f22e031deed335c8050985dbce"
+    },
+    {
+      "source": "lib/contract/schema/event-receipt.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/event-receipt.schema.json",
+      "sha256": "bc016b1005bbb6ee5116ff14e07494ceebddc553ea1f9ad86cda5df9842acbef"
+    },
+    {
+      "source": "lib/contract/schema/event.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/event.schema.json",
+      "sha256": "b241197467367005bc4ef6b8f8476ed866e8b27f63435b2cd485a33a8f51d6cf"
+    },
+    {
+      "source": "lib/contract/schema/status.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/status.schema.json",
+      "sha256": "8d60c0da8943c8e9f31592cdb66f0ecde8515979ba324b898631e615fc680e84"
+    },
+    {
+      "source": "lib/contract/schema/summary.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/summary.schema.json",
+      "sha256": "8590aff3f25c427b703a1021ced10d9be5f2e27680aa5ffbc7d015581d0bb60b"
+    },
+    {
+      "source": "lib/contract/schema/telemetry.schema.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/schema/telemetry.schema.json",
+      "sha256": "316340c174c21744920f0462feaedf4632305bbd684a210546a19af6a3948acd"
+    },
+    {
+      "source": "lib/contract/fields.json",
+      "copy": "app/Plugins/LibreSolarBms/resources/fields.json",
+      "sha256": "c1728d81f7fc9ced628019b3426e3acca4c063f6b094128b42246cfc286c7485"
+    },
+    {
+      "source": "tests/fixtures/v1/README.md",
+      "copy": "tests/fixtures/LibreSolarBms/v1/README.md",
+      "sha256": "fcba633a729199ffeeda9f9ee92e4db220b8328a0acd2fd3761553b4d5b014e5"
+    },
+    {
+      "source": "tests/fixtures/v1/api/accepted.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/accepted.json",
+      "sha256": "f589260e8d353d5af203ee2974d42b28a0326f6cd55a8d2e8d5d4b777f563bd6"
+    },
+    {
+      "source": "tests/fixtures/v1/api/battery-detail.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/battery-detail.json",
+      "sha256": "1c0dbdcc87199c467db3c94a072279138993bee7362639535cd366e5a26af564"
+    },
+    {
+      "source": "tests/fixtures/v1/api/battery-list.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/battery-list.json",
+      "sha256": "c048aed52e683a033b274ef27a218b6fd57e57e0fe321d571f2fe7353ea4da76"
+    },
+    {
+      "source": "tests/fixtures/v1/api/conflict.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/conflict.json",
+      "sha256": "db7ba9c6f63d91496c9ef474a04d1632abe6e4cf46e6e38edbc98b0dd73721aa"
+    },
+    {
+      "source": "tests/fixtures/v1/api/duplicate.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/duplicate.json",
+      "sha256": "6a512a95ae13bcde8133cfddb69eb9a659abeef853f3da9c7ec5b2021f08d192"
+    },
+    {
+      "source": "tests/fixtures/v1/api/event-list.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/event-list.json",
+      "sha256": "870cbc2b36e7956737c58fdda376915c1695b7c6a75a087c0069b145a85af60b"
+    },
+    {
+      "source": "tests/fixtures/v1/api/invalid.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/invalid.json",
+      "sha256": "f2240f055435d2c03138936eca9fa87b2ae35cd836ed48563bdd4f1619d2957d"
+    },
+    {
+      "source": "tests/fixtures/v1/api/stale.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/api/stale.json",
+      "sha256": "83e1230006f14f7ce920be95e0a57295c51fca92d95a289c716a4fbb1403028a"
+    },
+    {
+      "source": "tests/fixtures/v1/delivery-cases.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/delivery-cases.json",
+      "sha256": "a4015be496e58c1bfecb18407f51fcb68396e611fc9a75b9e421f4560a296f4c"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/bad-node.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/bad-node.telemetry.json",
+      "sha256": "e47e0d090751ce60f83b9a444784fb3ef4ca7b268a554788e8d09605e2cfd948"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/bad-receipt.event-receipt.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/bad-receipt.event-receipt.json",
+      "sha256": "ec6fa9c5672f12a66ab48bf425b98a06a485041fdeb7030872db531cf462740d"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/bad-status-id.status.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/bad-status-id.status.json",
+      "sha256": "ecf1ac4d37b605b1cbc8769247b29ff51cf53f301a7ea45d3bbb2ac10c85b7db"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/bad-time.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/bad-time.telemetry.json",
+      "sha256": "0f8c3beb1381c8754be1fa4279d135117ebbc0df43828b4702517de2f17292ac"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/bad-transition.event.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/bad-transition.event.json",
+      "sha256": "e734b8b5300edaa9b1d473c8d52f9706d3218c0cbfb796fa8d58fbe8e43126bf"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/mismatched-count.attributes.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/mismatched-count.attributes.json",
+      "sha256": "4c05fac3a83c18cfa8cc42d494887be8ff1d0e7ce582cf22280d221a27d91075"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/null-as-zero.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/null-as-zero.telemetry.json",
+      "sha256": "2c73e566bf69b204d942d1e36222fa0a0edc3af65786f9648b4c239fba128f92"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/null-without-quality.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/null-without-quality.telemetry.json",
+      "sha256": "91a88cb2714ad405a2ebc3abed47bc4230c4401c36b32da43d4c70202f0f6a44"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/numeric-string.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/numeric-string.telemetry.json",
+      "sha256": "83f6406419a3f8d10cf44c473e6884eb27d10dc592a0cef2f62a099ecda46f06"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/oversized-array.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/oversized-array.telemetry.json",
+      "sha256": "d8d097cad55e7458d43fb0e7754c80700f8942499e75ea1ceb3dc3a5d9119d01"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/safe-integer.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/safe-integer.telemetry.json",
+      "sha256": "2f7ae71b2d20893afd366998dc087c7801bb6829cda53943270e999fa0a22a9a"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/unknown-field.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/unknown-field.telemetry.json",
+      "sha256": "7d3f7f00c45a708d1796c159b538be601a8369840b925afffcf11750600372ea"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/unknown-version.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/unknown-version.telemetry.json",
+      "sha256": "6dfb550bd415c70321855356c41f4151548422387d31e217f07bfd0ca8541a82"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/wrong-faults.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/wrong-faults.telemetry.json",
+      "sha256": "49ff7dfce43b315e9871ea821439bf117af8770ef96d11fcca1c4aa8fec28faf"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/wrong-id.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/wrong-id.telemetry.json",
+      "sha256": "aff0a4a8605ef9d54338d68e7d04c50f6e4b17f8d9e645664cb99a183906d802"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/wrong-quality.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/wrong-quality.telemetry.json",
+      "sha256": "5ffb132a888b8d49e5fe12ed5f93128a9fb21591339342f08fd94600fe6543d9"
+    },
+    {
+      "source": "tests/fixtures/v1/invalid/zero-substitution.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/invalid/zero-substitution.telemetry.json",
+      "sha256": "8cc3674def11bedad8ecd6e545c2b956ebf246d526780495684728d2ed60fb33"
+    },
+    {
+      "source": "tests/fixtures/v1/manifest.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/manifest.json",
+      "sha256": "41f81615672439c29a36104be12f3745e56014b27de48bb2fc58b46fddde002d"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/cleared.event.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/cleared.event.json",
+      "sha256": "23c4315318122bb31b7ea1fa0a2643cbe06406871fecff9a65e9ae6d4b7929ef"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/cleared.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/cleared.telemetry.json",
+      "sha256": "e51f891ace194dfe64470709b36206e235fd40546844f433995e6471daf8945d"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/demo.attributes.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/demo.attributes.json",
+      "sha256": "833783fd5196f691f0d6f1a980d5bcf6dad3c3b4e61f4bdd4bc583b5aabfa4a1"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/fault.event.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/fault.event.json",
+      "sha256": "d42bee377b46099e3a615981a94358f919fa4c266458b21f10d74874c3f11e28"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/fault.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/fault.telemetry.json",
+      "sha256": "d70ac3f044148b404bb6657f00fbb8455a7073c31a75e1eac3242ff722d48248"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/first-observed.event.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/first-observed.event.json",
+      "sha256": "31f374d3e9bf28fa543a1ce6a11f2f05b023d820833ddb4fb9859cafc5571890"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/fresh.status.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/fresh.status.json",
+      "sha256": "eff1873e7cd5952106d09a358d09b1f493c2c4b3c08994c5878aa4a0b7a3fbb3"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/gap.event.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/gap.event.json",
+      "sha256": "636358ebc50fc2309e4f5954d25d61357b6fb3135515bdd1bf14d6304932ab29"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/normal.summary.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/normal.summary.json",
+      "sha256": "e51d24df289610e4298c5ef984e6c83911cd48fcb91d184891b6dbd60cbd50af"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/normal.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/normal.telemetry.json",
+      "sha256": "4cff01b770c4f9af13bcb1a52a98c40a63ff1ff4f10c75f3dbc2fc43961be63b"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/stored.event-receipt.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/stored.event-receipt.json",
+      "sha256": "94053316681d7a898ba8283738f4ffd67f98cd5788bca8fd2d40e321ed306d64"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/unavailable.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/unavailable.telemetry.json",
+      "sha256": "b885a8be3781bde728042967e52fae52681511bcd3ec512c1dd76507ad37bcf7"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/unknown-bit-31.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/unknown-bit-31.telemetry.json",
+      "sha256": "4e5b53796dbe9ada78d7ed5af3ce88e2c7734f87e6617780b03489e9ab13ee06"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/unknown-state.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/unknown-state.telemetry.json",
+      "sha256": "3b80e3bcb26da9e61ae548c4fa3fccd59f9852eb16f7808e00fffc244f617764"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/unsupported.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/unsupported.telemetry.json",
+      "sha256": "4cff01b770c4f9af13bcb1a52a98c40a63ff1ff4f10c75f3dbc2fc43961be63b"
+    },
+    {
+      "source": "tests/fixtures/v1/valid/zero-cell.telemetry.json",
+      "copy": "tests/fixtures/LibreSolarBms/v1/valid/zero-cell.telemetry.json",
+      "sha256": "255064fbec80c98d5c9e1adede0780eb3d5d770695f3840b83eada94f8e55c46"
+    }
+  ]
+}

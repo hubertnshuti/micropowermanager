@@ -34,12 +34,14 @@ class ApiKey extends BaseModelCentral {
     use HasFactory;
 
     protected $table = 'api_keys';
+    protected $casts = ['expires_at' => 'datetime'];
 
     protected $fillable = [
         'name',
         'token_hash',
         'active',
         'last_used_at',
+        'expires_at',
     ];
 
     /**
@@ -58,6 +60,8 @@ class ApiKey extends BaseModelCentral {
      */
     #[Scope]
     protected function active(Builder $query): Builder {
-        return $query->where('active', true);
+        return $query->where('active', true)->where(function (Builder $query): void {
+            $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
     }
 }
