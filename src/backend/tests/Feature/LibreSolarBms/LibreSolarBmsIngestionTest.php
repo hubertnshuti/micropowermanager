@@ -117,6 +117,24 @@ class LibreSolarBmsIngestionTest extends TestCase {
             ->assertSuccessful()->assertJsonPath('result', 'duplicate');
     }
 
+    public function testSummaryReplayTreatsSignedZeroAndExponentNotationAsEquivalentNumbers(): void {
+        foreach ([[121, '0', '-0.0'], [122, '100000000000000000', '1e17']] as [$sequence, $firstNumber, $replayedNumber]) {
+            $summary = $this->withSequence($this->fixture('normal.summary'), $sequence, 'summary');
+            $json = json_encode($summary, JSON_THROW_ON_ERROR);
+            foreach ([[$firstNumber, 'accepted'], [$replayedNumber, 'duplicate']] as [$number, $result]) {
+                $body = preg_replace('/("cell_temperature_max":)[0-9.]+/', '${1}'.$number, $json);
+                auth()->forgetGuards();
+                app('tymon.jwt')->unsetToken();
+                $this->call('POST', '/api/libre-solar-bms/ingest/summaries', [], [], [], [
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$this->token,
+                    'CONTENT_TYPE' => 'application/json',
+                    'HTTP_ACCEPT' => 'application/json',
+                ], $body)->assertSuccessful()->assertJsonPath('result', $result);
+            }
+        }
+        $this->assertSame(1, DB::connection('tenant')->table('libre_solar_bms_battery_states')->count());
+    }
+
     public function testInvalidSummaryPayloadsNeverWriteCurrentState(): void {
         $summary = $this->fixture('normal.summary');
         $invalid = [];
@@ -158,7 +176,7 @@ class LibreSolarBmsIngestionTest extends TestCase {
 
     public function testBatteryPaginationRejectsMalformedOrExcessiveInputs(): void {
         $headers = $this->readerHeaders();
-        foreach (['page=0', 'page=-1', 'page=1.5', 'page=1e2', 'page[]=1', 'per_page=0', 'per_page=101', 'per_page=25x', 'per_page=99999999999999999999999'] as $query) {
+        foreach (['page=0', 'page=-1', 'page=1.5', 'page=1e2', 'page[]=1', 'page='.PHP_INT_MAX.'&per_page=25', 'per_page=0', 'per_page=101', 'per_page=25x', 'per_page=99999999999999999999999'] as $query) {
             $this->getJson('/api/libre-solar-bms/batteries?'.$query, $headers)->assertStatus(422);
         }
         $this->getJson('/api/libre-solar-bms/batteries?page=2&per_page=1', $headers)
@@ -223,6 +241,160 @@ class LibreSolarBmsIngestionTest extends TestCase {
             }
             $central->statement('DROP DATABASE `'.$secondDatabase.'`');
         }
+    }
+
+    public function testEventsAreStoredOnceWithOriginalObservationTimeAndPaginated(): void {
+        $event = $this->fixture('fault.event');
+        $this->ingest('events', $event)->assertSuccessful();
+        $this->ingest('events', $event)->assertSuccessful()->assertJsonPath('result', 'duplicate');
+        $changed = $event;
+        $changed['published_at'] = '2026-10-08T14:00:01.000Z';
+        $this->ingest('events', $changed)->assertStatus(409);
+        $second = $this->withSequence($event, 124, 'events');
+        $second['event_id'] = $second['message_id'];
+        $this->ingest('events', $second)->assertSuccessful();
+        $this->assertSame(2, DB::connection('tenant')->table('libre_solar_bms_events')->count());
+        $this->getJson('/api/libre-solar-bms/batteries/'.$this->battery->id.'/events?per_page=1&page=2', $this->readerHeaders())
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('pagination.page', 2)->assertJsonPath('data.0.event.observed_at', $event['observed_at']);
+    }
+
+    public function testEventHistorySortsByOriginalMillisecondsRatherThanReceiptOrder(): void {
+        $later = $this->fixture('fault.event');
+        $later['observed_at'] = '2026-10-08T14:00:00.900Z';
+        $later['published_at'] = $later['observed_at'];
+        $earlier = $this->withSequence($later, 124, 'events');
+        $earlier['event_id'] = $earlier['message_id'];
+        $earlier['observed_at'] = '2026-10-08T14:00:00.100Z';
+        $earlier['published_at'] = $earlier['observed_at'];
+        $this->ingest('events', $later)->assertSuccessful();
+        $this->ingest('events', $earlier)->assertSuccessful();
+        $this->getJson('/api/libre-solar-bms/batteries/'.$this->battery->id.'/events', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('data.0.event.observed_at', $later['observed_at'])
+            ->assertJsonPath('data.1.event.observed_at', $earlier['observed_at']);
+    }
+
+    public function testEventHistoryPreservesContractDatesOutsideMysqlTimestampRange(): void {
+        $summary = $this->fixture('normal.summary');
+        $this->ingest('summaries', $summary)->assertSuccessful();
+        $historical = $this->fixture('fault.event');
+        $historical['observed_at'] = '1960-01-01T00:00:00.100Z';
+        $historical['published_at'] = $historical['observed_at'];
+        $future = $this->withSequence($historical, 124, 'events');
+        $future['event_id'] = $future['message_id'];
+        $future['observed_at'] = '2040-01-01T00:00:00.900Z';
+        $future['published_at'] = $future['observed_at'];
+        $this->ingest('events', $historical)->assertSuccessful();
+        $this->ingest('events', $future)->assertSuccessful();
+        $this->getJson('/api/libre-solar-bms/batteries/'.$this->battery->id.'/events', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('data.0.event.observed_at', $future['observed_at'])
+            ->assertJsonPath('data.1.event.observed_at', $historical['observed_at']);
+        $this->readBattery()->assertJsonPath('data.summary.observed_at', $summary['observed_at'])
+            ->assertJsonPath('data.summary.error_flags', 0);
+    }
+
+    public function testDelayedStatusRetainsItsOriginalCheckTimeAndDoesNotRefreshOnReplay(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 10));
+        $status = $this->fixture('fresh.status');
+        $this->ingest('status', $status)->assertSuccessful();
+        $first = $this->readBattery()->assertJsonPath('data.status.status_checked_at', $status['status_checked_at'])->json('data.status_received_at');
+        $this->travel(5)->minutes();
+        $this->ingest('status', $status)->assertSuccessful()->assertJsonPath('result', 'duplicate');
+        $this->readBattery()->assertJsonPath('data.status_received_at', $first)
+            ->assertJsonPath('data.integration_status', 'stale');
+        $older = $status;
+        $older['status_revision'] = 0;
+        $older['message_id'] = $older['node_id'].':mpm-demo:status:0';
+        $older['source_status'] = 'disconnected';
+        $this->ingest('status', $older)->assertSuccessful()->assertJsonPath('result', 'ignored_stale');
+        $this->readBattery()->assertJsonPath('data.status.status_revision', 1);
+        $this->travelBack();
+    }
+
+    public function testAttributesCannotProvisionOrReassignNodeOwnership(): void {
+        $attributes = $this->fixture('demo.attributes');
+        $this->ingest('attributes', $attributes)->assertSuccessful();
+        $this->readBattery()->assertJsonPath('data.attributes.profile_id', 'demo-lfp-4s-v1');
+        $attributes['company_id'] = $this->companyId + 1;
+        $this->ingest('attributes', $attributes)->assertStatus(422);
+        $summary = $this->fixture('normal.summary');
+        $summary['node_id'] = '53494D0000000002';
+        $summary['message_id'] = str_replace('53494D0000000001', $summary['node_id'], $summary['message_id']);
+        $summary['telemetry_message_id'] = str_replace('53494D0000000001', $summary['node_id'], $summary['telemetry_message_id']);
+        $this->ingest('summaries', $summary)->assertStatus(404);
+        $this->assertSame(1, Battery::count());
+    }
+
+    public function testStatusConflictsCannotRegressCheckTimeOrAcceptFutureChecks(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 0));
+        $status = $this->fixture('fresh.status');
+        $this->ingest('status', $status)->assertSuccessful();
+        $changed = [...$status, 'source_status' => 'disconnected'];
+        $this->ingest('status', $changed)->assertStatus(409)->assertJsonPath('code', 'status_revision_conflict');
+        $regressing = [...$status, 'status_revision' => 2, 'message_id' => $status['node_id'].':mpm-demo:status:2',
+            'status_checked_at' => '2026-10-08T13:59:59.000Z', 'last_source_observed_at' => '2026-10-08T13:59:59.000Z'];
+        $this->ingest('status', $regressing)->assertStatus(409);
+        $future = [...$status, 'status_revision' => 3, 'message_id' => $status['node_id'].':mpm-demo:status:3',
+            'status_checked_at' => '2026-10-08T14:00:06.000Z'];
+        $this->ingest('status', $future)->assertStatus(409);
+        $this->readBattery()->assertJsonPath('data.status.status_revision', 1)
+            ->assertJsonPath('data.status.status_checked_at', $status['status_checked_at']);
+        $this->travelBack();
+    }
+
+    public function testMinuteSummaryRemainsRecentUntilIntegrationThreshold(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 0));
+        $summary = $this->fixture('normal.summary');
+        $this->ingest('summaries', $summary)->assertSuccessful();
+        $this->ingest('status', $this->fixture('fresh.status'))->assertSuccessful();
+        $this->travel(42)->seconds();
+        $this->readBattery()->assertJsonPath('data.integration_status', 'recent')
+            ->assertJsonPath('data.status.source_status', 'fresh')
+            ->assertJsonPath('data.metric_observed_at', $summary['observed_at']);
+        $this->travel(108)->seconds();
+        $this->readBattery()->assertJsonPath('data.integration_status', 'stale');
+        $this->travelBack();
+    }
+
+    public function testAttributesCannotPromoteAnotherProducerSession(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 1));
+        $summary = $this->fixture('normal.summary');
+        $this->ingest('summaries', $summary)->assertSuccessful();
+        $attributes = $this->fixture('demo.attributes');
+        $attributes['session_id'] = '25f75ec4-29ab-48ab-93be-81d3e0708a68';
+        $attributes = $this->withSequence($attributes, 0, 'attributes');
+        $attributes['observed_at'] = '2026-10-08T14:01:00.000Z';
+        $attributes['published_at'] = $attributes['observed_at'];
+        $this->ingest('attributes', $attributes)->assertStatus(409);
+        $this->assertSame($summary['session_id'], $this->battery->fresh()->active_session_id);
+        $this->readBattery()->assertJsonPath('data.attributes', null);
+        $this->travelBack();
+    }
+
+    public function testSupersededSessionEventsRemainUsefulWithoutReplacingMetrics(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 1));
+        $original = $this->fixture('normal.summary');
+        $this->ingest('summaries', $original)->assertSuccessful();
+        $newer = $original;
+        $newer['session_id'] = '25f75ec4-29ab-48ab-93be-81d3e0708a68';
+        $newer = $this->withSequence($newer, 2, 'summary');
+        $newer['telemetry_message_id'] = $newer['node_id'].':'.$newer['session_id'].':telemetry:1';
+        $newer['observed_at'] = '2026-10-08T14:01:00.000Z';
+        $newer['published_at'] = $newer['observed_at'];
+        $newer['last_source_observed_at'] = $newer['observed_at'];
+        $newer['soc'] = 85;
+        $this->ingest('summaries', $newer)->assertSuccessful();
+        $event = $this->fixture('fault.event');
+        $this->ingest('events', $event)->assertSuccessful()->assertJsonPath('result', 'accepted');
+        $this->ingest('events', $event)->assertSuccessful()->assertJsonPath('result', 'duplicate');
+        $this->readBattery()->assertJsonPath('data.summary.soc', 85)
+            ->assertJsonPath('data.summary.error_flags', 0)
+            ->assertJsonPath('data.summary.observed_at', $newer['observed_at']);
+        $this->getJson('/api/libre-solar-bms/batteries/'.$this->battery->id.'/events', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('pagination.total', 1)->assertJsonPath('data.0.event.session_id', $original['session_id']);
+        $this->travelBack();
     }
 
     public function testMissingUnknownRevokedAndExpiredKeysAreRejected(): void {
