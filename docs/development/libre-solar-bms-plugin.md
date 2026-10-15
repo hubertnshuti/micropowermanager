@@ -98,6 +98,20 @@ Collection queries accept positive integer `page` and `per_page` (maximum 100).
 Invalid pagination returns 422; unknown battery IDs return 404 without searching another tenant.
 Without a source-status check, integration freshness remains stale rather than pretending an old summary proves a live battery.
 
+For a read request, set `MPM_USER_TOKEN` locally to the `access_token` returned by MPM's `POST /api/auth/login` for an authorized user.
+The company API key is not a user JWT.
+With `MPM_BACKEND_URL` set as above, run from the repository root:
+
+```sh
+curl --fail-with-body "$MPM_BACKEND_URL/api/libre-solar-bms/batteries?page=1&per_page=25" \
+  -H "Authorization: Bearer $MPM_USER_TOKEN" -H "Accept: application/json"
+```
+
+Expected: HTTP 200 containing `data` and `pagination`; a provisioned battery with no summary retains null measurements.
+Use an `id` returned by this list for the detail and event-history URLs; a caller-supplied node string does not select another company's data.
+Inspect a 401 as a user-login/token problem and a 403 as a plugin/permission problem before retrying.
+Do not record user tokens in shared output or screenshots.
+
 Run backend verification on the Linux host from `src/backend`, using only the isolated test database and Redis:
 
 ```sh
@@ -122,6 +136,40 @@ Use the summary curl example with the matching route and fixture; expect accepte
 Same-identity changed content is a 409 conflict; status-revision conflicts use `status_revision_conflict`.
 Status must come from the adapter ID chosen during provisioning; another adapter returns `forbidden_adapter` (403).
 Rebinding an adapter or resetting its durable counter requires explicit reconciliation; the provisioning command does not guess a safe reset.
+
+## Repeatable private demo credentials
+
+The provisioning command can create or reuse an existing company key without printing its value.
+With the application configured and the selected company ID known, run from `src/backend`:
+
+```sh
+php artisan libre-solar-bms:provision COMPANY_ID 53494D0000000001 \
+  --label="Demo battery" --adapter=mpm-demo --source=simulator \
+  --key-file=storage/app/private/libre-solar-bms-adapter.key
+```
+
+Expected: one company-owned battery, one active plugin entry and a private mode-0600 key file.
+The same command reuses the same active company key and preserves the battery's label and stored data.
+The file path must resolve inside `storage/app/private`; symlinks, public paths and files with broader permissions are rejected.
+Existing files are never overwritten, including when their key is expired, revoked or belongs to another company.
+Optional `--expires-at=YYYY-MM-DDTHH:MM:SSZ` requires a valid future UTC timestamp when issuing the key; an existing key's expiry is never reset.
+If a command fails, inspect its controlled error before retrying rather than deleting a key file to bypass it.
+
+For the [isolated Docker runtime](libre-solar-compose.md), first follow that guide's initialization and Compose environment selection in the same terminal.
+Then run the same Artisan command using `docker compose run --rm --no-deps backend` from the repository root.
+The key then lives in that project's private storage volume, outside the source checkout.
+With the backend running and that same Compose environment selected, load the key into your local shell without displaying it:
+
+```sh
+export MPM_API_KEY="$(docker compose exec -T backend cat storage/app/private/libre-solar-bms-adapter.key)"
+export MPM_BACKEND_URL=http://127.0.0.1:18000
+```
+
+Use these variables with the documented curl example or supply `MPM_API_KEY` and `MPM_BASE_URL` to the gateway adapter's private configuration.
+Do not paste the key into a PR, support output, screenshot or tracked environment file.
+The central key row stores only the SHA-256 hash.
+Tenant provisioning, central key creation and private-file writes span separate resources; a failure during the final database commit requires checking both database states before retrying.
+Expected validation failures roll back their writes and remove only a newly created file owned by that attempt.
 
 Events keep observation time separate from backend receipt time and accept previously unseen valid events from retired sessions.
 They do not promote sessions, replace metrics or imply a fault began before it was first observed.

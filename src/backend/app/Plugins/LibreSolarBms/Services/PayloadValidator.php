@@ -68,7 +68,7 @@ class PayloadValidator {
 
     /** @return list<array{path: string, code: string}> */
     private function schemaErrors(?ValidationError $error): array {
-        if ($error === null) {
+        if (!$error instanceof ValidationError) {
             return [['path' => '', 'code' => 'schema']];
         }
         if ($error->subErrors() !== []) {
@@ -79,7 +79,7 @@ class PayloadValidator {
 
             return $errors;
         }
-        $path = array_map(static fn ($part): string => str_replace(['~', '/'], ['~0', '~1'], (string) $part), $error->data()->fullPath());
+        $path = array_map(static fn (int|string $part): string => str_replace(['~', '/'], ['~0', '~1'], (string) $part), $error->data()->fullPath());
 
         return [['path' => $path === [] ? '' : '/'.implode('/', $path), 'code' => $error->keyword()]];
     }
@@ -116,10 +116,8 @@ class PayloadValidator {
                 $reject('/telemetry_message_id', 'invalid_sample_reference');
             }
         }
-        if ($kind === 'summary') {
-            if ($payload['last_source_observed_at'] !== $payload['observed_at']) {
-                $reject('/last_source_observed_at', 'observation_mismatch');
-            }
+        if ($kind === 'summary' && $payload['last_source_observed_at'] !== $payload['observed_at']) {
+            $reject('/last_source_observed_at', 'observation_mismatch');
         }
         if ($kind === 'summary' || $kind === 'telemetry') {
             $this->measurementErrors($payload, $reject);

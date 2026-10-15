@@ -48,7 +48,7 @@ class BatteryController extends Controller {
         $battery = $this->batteries->find($id);
         [$page, $perPage] = $this->pagination($request);
         $rows = DB::connection('tenant')->table('libre_solar_bms_events')->where('battery_id', $battery->id)
-            ->orderByDesc('observed_at')->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+            ->latest('observed_at')->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
         $data = $rows->getCollection()->map(fn (DatabaseRow $event): array => [
             'id' => $event->id, 'event' => json_decode($event->payload),
             'received_at' => Carbon::parse($event->received_at)->toISOString(),
