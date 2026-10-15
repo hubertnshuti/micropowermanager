@@ -2002,6 +2002,11 @@ export const exportedRoutes = [
     },
     children: [
       {
+        path: "batteries/:id",
+        component: LibreSolarBmsOverview,
+        meta: { layout: "default" },
+      },
+      {
         path: "overview",
         component: LibreSolarBmsOverview,
         meta: {
