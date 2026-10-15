@@ -72,6 +72,7 @@ import KelinMeterList from "@/plugins/kelin-meter/modules/Meter/List.vue"
 import KelinMeterStatus from "@/plugins/kelin-meter/modules/Meter/Status.vue"
 import KelinMeterOverview from "@/plugins/kelin-meter/modules/Overview/Overview.vue"
 import KelinMeterSettings from "@/plugins/kelin-meter/modules/Setting/Setting.vue"
+import LibreSolarBmsOverview from "@/plugins/libre-solar-bms/modules/Overview/Overview.vue"
 import MicroStarMeterOverview from "@/plugins/micro-star-meter/modules/Overview/Overview.vue"
 import OdysseyExportOverview from "@/plugins/odyssey-data-export/modules/Overview/Overview.vue"
 import PaystackCredential from "@/plugins/paystack-payment-provider/modules/Overview/Credential.vue"
@@ -1984,6 +1985,30 @@ export const exportedRoutes = [
           sidebar: {
             enabled: true,
             name: "Transactions",
+          },
+        },
+      },
+    ],
+  },
+  {
+    path: "/libre-solar-bms",
+    component: ChildRouteWrapper,
+    meta: {
+      sidebar: {
+        enabled_by_mpm_plugin_id: 33,
+        name: "Libre Solar Bms",
+        icon: "cloud_upload",
+      },
+    },
+    children: [
+      {
+        path: "overview",
+        component: LibreSolarBmsOverview,
+        meta: {
+          layout: "default",
+          sidebar: {
+            enabled: true,
+            name: "Overview",
           },
         },
       },
