@@ -106,3 +106,40 @@ php artisan test --filter=LibreSolarBms
 
 Expected: a nonzero test count including actual database writes, separate-company database isolation and shared contract fixtures.
 Fixture tests are development evidence; gateway-to-MPM delivery and browser screenshots must be recorded separately.
+
+## Events, metadata and source freshness
+
+The following additional authenticated single-object ingestion routes use the same key, provisioned-node ownership and plugin checks:
+
+| Route                                         | Constructed request fixture  | Stored effect                           |
+| --------------------------------------------- | ---------------------------- | --------------------------------------- |
+| `POST /api/libre-solar-bms/ingest/events`     | `valid/fault.event.json`     | One event per stable event identity     |
+| `POST /api/libre-solar-bms/ingest/attributes` | `valid/demo.attributes.json` | Latest metadata for an existing battery |
+| `POST /api/libre-solar-bms/ingest/status`     | `valid/fresh.status.json`    | One independent status/check watermark  |
+
+Fixture paths are relative to `src/backend/tests/fixtures/LibreSolarBms/v1/`.
+Use the summary curl example with the matching route and fixture; expect accepted, duplicate or ignored-stale outcomes for matching message IDs.
+Same-identity changed content is a 409 conflict; status-revision conflicts use `status_revision_conflict`.
+Status must come from the adapter ID chosen during provisioning; another adapter returns `forbidden_adapter` (403).
+Rebinding an adapter or resetting its durable counter requires explicit reconciliation; the provisioning command does not guess a safe reset.
+
+Events keep observation time separate from backend receipt time and accept previously unseen valid events from retired sessions.
+They do not promote sessions, replace metrics or imply a fault began before it was first observed.
+Read history at `GET /api/libre-solar-bms/batteries/{id}/events`, with the same JWT permission and pagination rules as the list.
+It sorts by observed time descending, then internal event ID descending.
+This is page browsing, not an immutable snapshot during concurrent inserts.
+
+Metadata has an independent sequence watermark and cannot establish a live producer session or change company/node/source ownership.
+Unsupported SoH/cycle counts, unknown faults and explicit quality reasons remain unchanged in stored payloads.
+No null fault is converted to a cleared fault or a fabricated event.
+
+Status revisions are independent of measurement sequences and persist with the current state.
+Older revisions are ignored; equal conflicting revisions, regressing check times and checks more than five seconds in the future are rejected.
+Retries preserve original `status_checked_at` and `last_source_observed_at`; receipt time never substitutes for check time.
+Integration becomes stale when the last accepted original check reaches 150 seconds old, even if a delayed request arrived just now.
+A recent source check can remain fresh while a metric summary is 42 seconds old; the 15-second source timeout is the adapter's responsibility, not a metric-row expiry rule.
+The UI must age the accepted check independently and label source status separately from integration status.
+
+Backend fixture tests cover these transitions, but the current gateway adapter lacks durable HTTP retry, event receipts and source-status delivery.
+Those adapter features and an actual lost-response retry remain integration work requiring compatible gateway behavior.
+Do not interpret backend fixture success as proof those gateway features exist.

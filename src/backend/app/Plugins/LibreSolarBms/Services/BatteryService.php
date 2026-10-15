@@ -20,12 +20,15 @@ class BatteryService {
             if ($battery->source !== $payload['source']) {
                 throw new LibreSolarBmsException('invalid_payload', 422, $payload['message_id']);
             }
+            if ($kind === 'status' && $battery->adapter_id !== $payload['adapter_id']) {
+                throw new LibreSolarBmsException('forbidden_adapter', 403, $payload['message_id']);
+            }
             $fingerprint = hash('sha256', json_encode($this->normalize(json_decode($json)), JSON_THROW_ON_ERROR));
             $receipts = DB::connection('tenant')->table('libre_solar_bms_receipts')->where('battery_id', $battery->id);
             $receipt = (clone $receipts)->where('message_id', $payload['message_id'])->first();
             if ($receipt !== null) {
                 if ($receipt->fingerprint !== $fingerprint) {
-                    throw new LibreSolarBmsException('id_conflict', 409, $payload['message_id']);
+                    throw new LibreSolarBmsException($kind === 'status' ? 'status_revision_conflict' : 'id_conflict', 409, $payload['message_id']);
                 }
 
                 return ['result' => $receipt->result === 'accepted' ? 'duplicate' : $receipt->result,
@@ -36,7 +39,7 @@ class BatteryService {
             $receipts->insert([
                 'battery_id' => $battery->id, 'message_id' => $payload['message_id'],
                 'fingerprint' => $fingerprint, 'result' => $outcome['result'],
-                'reason' => $outcome['reason'] ?? null, 'received_at' => now(),
+                'reason' => $outcome['reason'] ?? null, 'received_at' => $this->receiptTime(),
             ]);
 
             return [...$outcome, 'message_id' => $payload['message_id']];
@@ -47,14 +50,46 @@ class BatteryService {
      * @return array<string, string>
      */
     private function apply(Battery $battery, ?object $state, string $kind, array $payload, string $json): array {
-        $current = $state?->summary === null ? null : json_decode($state->summary, true);
-        $reason = $this->snapshotOrder($battery, $payload, $current, true);
+        if ($kind === 'event') {
+            DB::connection('tenant')->table('libre_solar_bms_events')->insert([
+                'battery_id' => $battery->id, 'event_id' => $payload['event_id'], 'payload' => $json,
+                'observed_at' => $payload['observed_at'], 'received_at' => $this->receiptTime(),
+            ]);
+
+            return ['result' => 'accepted'];
+        }
+        if ($kind === 'status') {
+            return $this->applyStatus($battery, $state, $payload, $json);
+        }
+        $column = $kind === 'attributes' ? 'attributes' : 'summary';
+        $current = $state?->{$column} === null ? null : json_decode($state->{$column}, true);
+        $reason = $this->snapshotOrder($battery, $payload, $current, $kind === 'summary');
         if ($reason !== null) {
             return ['result' => 'ignored_stale', 'reason' => $reason];
         }
         DB::connection('tenant')->table('libre_solar_bms_battery_states')->updateOrInsert(
             ['battery_id' => $battery->id],
-            ['summary' => $json, 'summary_received_at' => now()]
+            [$column => $json, ...($kind === 'summary' ? ['summary_received_at' => $this->receiptTime()] : [])]
+        );
+
+        return ['result' => 'accepted'];
+    }
+
+    /** @param array<string, mixed> $payload
+     * @return array<string, string>
+     */
+    private function applyStatus(Battery $battery, ?object $state, array $payload, string $json): array {
+        $current = $state?->status === null ? null : json_decode($state->status, true);
+        if ($current !== null && $payload['status_revision'] < $current['status_revision']) {
+            return ['result' => 'ignored_stale', 'reason' => 'superseded_status_revision'];
+        }
+        if (Carbon::parse($payload['status_checked_at'])->greaterThan(now()->addSeconds(5))
+            || ($current !== null && ($payload['status_revision'] === $current['status_revision'] || $payload['status_checked_at'] < $current['status_checked_at']))) {
+            throw new LibreSolarBmsException('status_revision_conflict', 409, $payload['message_id']);
+        }
+        DB::connection('tenant')->table('libre_solar_bms_battery_states')->updateOrInsert(
+            ['battery_id' => $battery->id],
+            ['status' => $json, 'status_received_at' => $this->receiptTime()]
         );
 
         return ['result' => 'accepted'];
@@ -70,6 +105,9 @@ class BatteryService {
         }
         $observed = Carbon::parse($payload['observed_at']);
         if ($observed->greaterThan(now()->addSeconds(5))) {
+            throw new LibreSolarBmsException('session_conflict', 409, $payload['message_id']);
+        }
+        if (!$canPromote && $battery->active_session_id === null && $current !== null && $current['session_id'] !== $session) {
             throw new LibreSolarBmsException('session_conflict', 409, $payload['message_id']);
         }
         if ($battery->active_session_id !== null && $battery->active_session_id !== $session) {
@@ -98,7 +136,15 @@ class BatteryService {
         return null;
     }
 
+    private function receiptTime(): string {
+        return now()->utc()->format('Y-m-d H:i:s.v');
+    }
+
     private function normalize(mixed $value): mixed {
+        if (is_int($value) || is_float($value)) {
+            // Gateway JSON numbers use IEEE 754, including equivalent exponent and signed-zero spellings.
+            return $value == 0 ? 0 : (float) $value;
+        }
         if (is_object($value)) {
             $properties = get_object_vars($value);
             ksort($properties, SORT_STRING);
@@ -120,11 +166,15 @@ class BatteryService {
     public function detail(Battery $battery): array {
         $state = DB::connection('tenant')->table('libre_solar_bms_battery_states')->where('battery_id', $battery->id)->first();
         $summary = $state?->summary === null ? null : json_decode($state->summary);
+        $status = $state?->status === null ? null : json_decode($state->status);
+        $recent = $status !== null && Carbon::parse($status->status_checked_at)->greaterThan(now()->subSeconds(150));
 
         return ['id' => $battery->id, 'node_id' => $battery->node_id, 'source' => $battery->source,
-            'label' => $battery->label, 'summary' => $summary, 'attributes' => null, 'status' => null,
-            'summary_received_at' => $state?->summary_received_at,
-            'status_received_at' => null, 'integration_status' => 'stale',
+            'label' => $battery->label, 'summary' => $summary,
+            'attributes' => $state?->attributes === null ? null : json_decode($state->attributes), 'status' => $status,
+            'summary_received_at' => $state?->summary_received_at === null ? null : Carbon::parse($state->summary_received_at)->toISOString(),
+            'status_received_at' => $state?->status_received_at === null ? null : Carbon::parse($state->status_received_at)->toISOString(),
+            'integration_status' => $recent ? 'recent' : 'stale',
             'integration_stale_after_seconds' => 150, 'metric_observed_at' => $summary?->observed_at];
     }
 }
