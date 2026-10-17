@@ -56,7 +56,7 @@ mpm_frontend config
 The explicit project directory makes the relative build context and source mount resolve to this checkout even though the generated Compose file is outside Git.
 Inspect the effective configuration before starting: the source must be this checkout's `src/frontend`, container name must belong to your project, and the only published port must be `8001:8080`.
 Compose creates a separate `${MPM_FRONTEND_PROJECT}_frontend_node_modules` volume for the locked dependencies.
-If port 8001 is occupied, identify its owner and coordinate the handover before continuing.
+If port 8001 is occupied, identify the existing service and select an unused port before continuing.
 Never stop an unidentified service or remove another person's volumes.
 The backend URL must be reachable from the browser; a Docker-only service name is insufficient.
 For a remote browser, replace `127.0.0.1` with its actual reachable backend address before starting.
@@ -87,7 +87,6 @@ mpm_frontend start frontend-dev
 The upstream frontend entrypoint uses `npm install` and a relative `cd app`; the explicit working directory and entrypoint above avoid that path assumption and use locked dependencies.
 Keep the generated file for subsequent commands in this terminal; a new terminal must recreate the variables and helper or supply the same explicit paths and project name.
 This startup reuses an existing initialized backend and does not demonstrate a clean installation.
-The shared review installation used a private frontend-only override with the same isolation constraints.
 
 ## What the screen means
 
@@ -128,7 +127,7 @@ The action is absent from fixture previews, empty/error states and detail views.
 Normal production behavior uses the real authenticated backend.
 Fixture preview is compiled only into development and requires an explicit query parameter.
 It is labeled `Fixture preview — not live integration` and does not write any backend data.
-Copied fixture values come from the backend review examples; timestamps are adjusted relative to the preview clock to exercise freshness presentation.
+Copied fixture values come from the backend API examples; timestamps are adjusted relative to the preview clock to exercise freshness presentation.
 Fault-history observations preserve their original fixture times.
 This is UI evidence using constructed data, not MQTT-to-MPM integration evidence.
 
@@ -163,21 +162,16 @@ npm run i18n:check-json
 MPM_ENV=development MPM_BACKEND_URL=http://127.0.0.1:18000 NODE_OPTIONS=--max-old-space-size=1536 npm run build
 ```
 
-The focused battery suite passed 79 tests across three suites during implementation.
-The production build and development compiler both completed successfully.
-The final production build completed in 87 seconds with worker parallelism disabled through a temporary Vue CLI configuration.
-Its JavaScript output contained neither the fixture node ID nor the fixture provider's failure text; the setup hook remained present.
-Actual authenticated list/detail/history responses were also accepted by the new frontend service: one simulated battery, stale integration and two events.
-This validates read compatibility with stored data; it does not demonstrate a fresh MQTT scenario or browser rendering.
-Record the actual revision, command output and warnings when reproducing these checks.
-Browser navigation remains blocked: both Windows and WSL curl returned HTTP 200, but dedicated Edge 155 navigation to both localhost and explicit IPv4 timed out.
-A test-only request-forwarding attempt also timed out.
-No successful browser login or screenshots are claimed; compiler success does not establish those results.
+Recorded implementation validation covered 79 passing tests across three suites, a production build and the development compiler.
+The production bundle excluded the fixture node ID and fixture-provider failure text while retaining the setup hook.
+The frontend service accepted authenticated list/detail/history responses containing one simulated battery, stale integration and two events.
+These results establish service compatibility with stored data; browser rendering and fresh MQTT scenarios require the separate acceptance checks below.
+Record the source revision, command output and warnings when reproducing these checks.
 The dedicated Jest configuration uses existing dependencies to exercise services, pure presentation logic and real Vue component scripts.
 It does not mount templates or replace browser tests.
 The repository's default `npm test` currently references a missing `setupTests.js` and fails validation before executing tests.
 That baseline failure is not suppressed or counted as a passing check.
-On a memory-constrained machine, the final check used this temporary configuration from `src/frontend`, with the development compiler stopped:
+For a production build on a memory-constrained machine, use this temporary configuration from `src/frontend`, with the development compiler stopped:
 
 ```sh
 mpm_build_config_dir="$(mktemp -d /tmp/mpm-build-config.XXXXXX)"
@@ -198,7 +192,6 @@ Production builds use MPM's existing runtime environment injection; follow the d
 ## Design references
 
 The [official frontend guide](https://micropowermanager.io/development/frontend.html) links the MPM Brand Guidelines 2026.
-The supplied nine-page PDF was read, including typography, palette and illustrated examples.
 The view reuses MPM's Widget/cards/tables and existing blue/orange tokens.
 Scoped Inter typography follows the guide and is bundled locally under the SIL Open Font License, avoiding a runtime font download.
 The font source is [Google Fonts' Inter directory](https://github.com/google/fonts/tree/main/ofl/inter).
@@ -214,17 +207,18 @@ A successful login with an empty list can mean no batteries are provisioned for 
 For exit 137, check Docker's available memory and coordinate resource use; keep development compilation and production builds sequential.
 If HTML downloads but browser navigation times out, record the browser URL and exact error separately from curl results.
 
-## Remaining checks and handover
+## Current limitations
 
-Browser screenshots, actual API integration scenarios and independent clean installation must be recorded separately with exact revisions.
-The initial successful build is compiler evidence, not proof that browser login or every scenario works.
-The running handover for the integration maintainer records confirmed gaps and pending evidence; the following API limits remain visible in the implementation:
+The following limits apply to the current screens and their API:
 
 - List rows lack the original check timestamp and integration threshold, so list assessments are qualified at last fetch.
 - Detail lacks individual electronics measurements; only the combined maximum is shown.
 - Copied detail examples omit `summary_received_at`; missing fixture receipt time remains unavailable.
 - Gateway revision `66a4fbc` lacks source-status delivery, durable HTTP retry/outbox and stored-event receipts.
-- The existing backend with shared data is development setup, not D06 independent reproduction.
+- The focused battery suite does not mount Vue templates, and the frontend quality workflow does not execute it automatically.
+
+Capture browser acceptance, current API integration scenarios and independent installation results with exact revisions.
+An existing backend with retained data does not establish a clean installation.
 
 ## Manual browser acceptance record
 
@@ -242,5 +236,4 @@ Record the browser version, source revision, viewport and pass/fail result; capt
 9. Use Tab/Enter for controls, 200% zoom and a narrow viewport; confirm readable labels, accessible history scrolling and no reliance on color alone.
 10. Capture normal, named fault/history, unavailable/unknown, stale and request-error screens; label fixture images as fixtures and keep credentials/tokens out of images.
 
-Independent full-stack reproduction remains a separate task with fresh isolated data after the frontend is merged.
-Do not use a temporary shared-backend frontend session as that evidence.
+For independent full-stack reproduction, use fresh isolated data and record both the gateway and MPM revisions.

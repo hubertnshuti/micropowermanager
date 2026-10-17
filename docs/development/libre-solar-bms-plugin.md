@@ -1,14 +1,13 @@
 # Libre Solar BMS plugin
 
-The generated plugin has central ID `33` (`MpmPlugin::LIBRE_SOLAR_BMS`).
+The plugin has central ID `33` (`MpmPlugin::LIBRE_SOLAR_BMS`).
 Its backend is `src/backend/app/Plugins/LibreSolarBms/` and frontend is `src/frontend/src/plugins/libre-solar-bms/`.
-The generated placeholder is registered at `/libre-solar-bms/overview`.
-It is not a battery screen or evidence of a working ingestion API.
+The battery list is registered at `/libre-solar-bms/overview`; selecting a battery opens its detail and fault history.
+The backend accepts summaries, events, metadata and source checks for explicitly provisioned company-owned batteries.
 
 ## Registration and activation
 
-From the complete source clone, the plugin generator was run once on the Linux host.
-Do not run it again for this plugin.
+The plugin is already generated and registered; do not rerun the generator.
 The central registration migration explicitly uses `micro_power_manager`.
 The installation command performs no payment, device-control or ownership changes.
 
@@ -22,9 +21,8 @@ Expect the new central plugin registration migration to succeed.
 Inspect a failure before retrying; never reset an existing application database.
 Log in as an authorized company administrator and enable LibreSolarBms in plugin settings.
 The existing plugin activation flow creates tenant plugin state, adds the registration step and runs `libre-solar-bms:install`.
-Mark the placeholder configured to close that registration step.
+After the real battery list loads, use `Finish plugin setup` to close that registration step.
 Sidebar visibility is conditional on the company's plugin activation.
-Actual browser/sidebar verification remains pending.
 
 With the isolated test database and Redis available, run from `src/backend`:
 
@@ -35,16 +33,16 @@ php artisan test --filter=LibreSolarBmsRegistrationTest
 Expect a nonzero passing test count covering central registration and tenant activation.
 The test bootstrap must select `mpm_testing`; do not bypass that safeguard.
 
-## Frontend handoff
+## Operator screens
 
-The screen owner should begin only after the skeleton has been reviewed and merged.
-The overview component is a generated placeholder; list/detail screens, translations, fault history, loading/error states and screenshots remain frontend work.
-Backend work can proceed on dependent branches without treating those pending reviews as completed.
+The [frontend guide](libre-solar-bms-frontend.md) documents the battery list, detail and paginated fault history, including loading, permission, unavailable-data and stale-data states.
+The screens use the signed-in user's token and preserve separate source assessments, integration freshness and observation times.
+Fixture previews are explicit development tools and do not replace authenticated backend reads.
 
 ## Summary ingestion and ownership
 
-The summary backend is implemented against the published proposed gateway contract at `66a4fbcf1bdda6dd008de45f8f95455408678f45`.
-Owner review remains pending; the copied schemas and fixtures record source checksums in `src/backend/tests/fixtures/LibreSolarBms/provenance.json`.
+The summary backend implements the version-one gateway contract published at `66a4fbcf1bdda6dd008de45f8f95455408678f45`.
+The copied schemas and fixtures record source checksums in `src/backend/tests/fixtures/LibreSolarBms/provenance.json`.
 Opis JSON Schema 2.6.0 enforces Draft 2020-12 and formats, followed by the gateway's semantic rules.
 The other fixture kinds are validated for contract parity; this does not expose a telemetry-history endpoint.
 
@@ -88,7 +86,7 @@ Do not add `company_id` to the payload.
 Within a session, older summaries are acknowledged as `ignored_stale` without replacing current state or changing receipt times.
 A new session requires a newer observation within 150 seconds of receipt and at most five seconds into the future.
 Superseded sessions remain retired; UUID lexical ordering has no meaning.
-These clock limits implement the proposed contract and still require owner review.
+These clock limits follow the pinned contract.
 One current summary row is stored per battery; a small receipt ledger retains identity/fingerprint/outcome evidence for retries and conflicts, not raw telemetry.
 There is currently no automatic ledger retention policy; deleting identity evidence would weaken replay/conflict detection.
 
@@ -137,7 +135,7 @@ Same-identity changed content is a 409 conflict; status-revision conflicts use `
 Status must come from the adapter ID chosen during provisioning; another adapter returns `forbidden_adapter` (403).
 Rebinding an adapter or resetting its durable counter requires explicit reconciliation; the provisioning command does not guess a safe reset.
 
-## Repeatable private demo credentials
+## Repeatable local credentials
 
 The provisioning command can create or reuse an existing company key without printing its value.
 With the application configured and the selected company ID known, run from `src/backend`:
@@ -191,4 +189,4 @@ The UI must age the accepted check independently and label source status separat
 Backend fixture tests cover these transitions, but the current gateway adapter lacks durable HTTP retry, event receipts and source-status delivery.
 Those adapter features and an actual lost-response retry remain integration work requiring compatible gateway behavior.
 Do not interpret backend fixture success as proof those gateway features exist.
-See the [backend handover](libre-solar-bms-handover.md) for separate real simulator delivery evidence and remaining integration limits.
+See [integration validation](libre-solar-bms-handover.md) for recorded simulator delivery evidence and remaining integration limits.

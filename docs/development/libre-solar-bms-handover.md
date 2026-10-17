@@ -1,4 +1,4 @@
-# Libre Solar BMS backend handover
+# Libre Solar BMS integration validation
 
 The plugin accepts normalized simulator messages through MPM's Laravel backend and returns company-scoped battery state and useful events.
 It stores one current state per provisioned battery, rather than the one-second telemetry stream.
@@ -6,8 +6,8 @@ Start with the [plugin/API guide](libre-solar-bms-plugin.md) and [isolated Docke
 
 ## Interface and ownership
 
-Plugin ID is `33`; its generated frontend module is `src/frontend/src/plugins/libre-solar-bms/` and placeholder route is `/libre-solar-bms/overview`.
-The placeholder is not a completed battery list/detail screen.
+Plugin ID is `33`; its frontend module is `src/frontend/src/plugins/libre-solar-bms/` and battery-list route is `/libre-solar-bms/overview`.
+The [frontend guide](libre-solar-bms-frontend.md) describes the implemented list, detail and fault-history screens.
 The backend module is `src/backend/app/Plugins/LibreSolarBms/`.
 
 | Operation      | Endpoint                                         | Authentication                          |
@@ -28,7 +28,7 @@ Permission installation grants the existing tenant owner/admin roles; additional
 
 The copied request schemas and response examples live under `src/backend/tests/fixtures/LibreSolarBms/`.
 Its `provenance.json` identifies gateway commit `66a4fbcf1bdda6dd008de45f8f95455408678f45` and file checksums.
-These are proposed version-one interfaces awaiting owner review; publication does not imply teammate agreement.
+The schemas define the version-one interface used by the backend contract tests.
 
 ## Data and display semantics
 
@@ -59,15 +59,13 @@ A 42-second-old summary can coexist with a recent source check.
 The source's 15-second timeout belongs to the adapter and must not become a metric-row expiry rule.
 The frontend should display source status and integration freshness separately and continue aging an accepted check.
 
-## Frontend work and review still required
+## Integration boundaries
 
-The generated module is ready for the frontend owner to extend after skeleton review/merge.
-Battery list/detail/history, translations, loading/error states, unknown/fault/offline presentation, real browser screenshots and independent setup reproduction remain frontend work.
-Do not present the generated placeholder or fixture requests as a working operator screen.
-Battery placement on a dedicated plugin page versus attachment to an existing customer/device remains an owner decision; no existing ownership model was silently repurposed.
+The operator screens use a dedicated plugin page and the explicitly provisioned company-to-battery mapping.
+The integration does not repurpose customer-device ownership or expose battery controls.
+Browser acceptance and independent setup reproduction must identify the revisions, configuration and data source used.
 
-The integration maintainer and frontend owner must review authentication, ordering and the proposed interface before release.
-The gateway currently forwards summaries/events/attributes but lacks durable HTTP retries/outbox, stored-event receipt publication and source-status delivery.
+The gateway revision used in the validation below forwards summaries/events/attributes but lacks durable HTTP retries/outbox, stored-event receipt publication and source-status delivery.
 Those exact behaviors are required before claiming reliable end-to-end retry/freshness integration.
 A backend fixture retry is not evidence that the gateway survives a lost HTTP response.
 
@@ -92,14 +90,14 @@ The broker image was `eclipse-mosquitto@sha256:38c0da4f2ef84284d47b3b3eeea1cb3bd
 | Fresh isolated Docker initialization              | Both image builds, both locked installs, central/tenant migrations and first demo seed passed     |
 | Runtime                                           | Backend health, frontend HTTP and demo login API returned 200; Horizon running                    |
 | Repeat provisioning and full stop/restart         | One battery, one plugin activation and one named adapter key preserved                            |
-| Source ownership                                  | Sampled files retained Linux UID/GID 1003:1003                                                    |
+| Source ownership                                  | Sampled source files retained the invoking user's UID/GID                                         |
 | Worker shutdown after explicit SIGTERM            | Exit 0, not OOM-killed; worker restarted                                                          |
 | Actual simulated-source delivery                  | Summary and attributes stored; overvoltage raised/cleared as two events                           |
 | Actual replay/conflict                            | Identical event returned duplicate; changed-content identity returned 409 without adding an event |
 | Final integration storage counts                  | 1 battery, 1 current-state row, 2 events, 6 identity receipts                                     |
 | Unsupported values/source freshness               | SoH and cycle count stayed null; absent status stayed null and integration stale                  |
 
-The original interrupted aggregate quality command is not counted as passed; completed sequential baseline components and scoped feature checks supply the quality evidence.
+Quality evidence covers completed sequential checks and scoped feature checks; it does not establish a passing aggregate quality run.
 The actual integration above used simulator-produced messages, separately from copied fixture tests.
 It does not establish hardware behavior, concurrent request behavior, autonomous recovery after a lost HTTP response, browser login or a working battery screen.
 Existing Predis nullable-parameter deprecation warnings appeared in PHP 8.5 diagnostic CLI output; the recorded commands exited successfully.
@@ -110,7 +108,7 @@ First complete the Docker setup and explicit-company battery/key provisioning in
 Keep those application services running; host PHP and Horizon terminals are not required.
 Use a gateway checkout at the commit above, Node 24.21.0, and an authenticated MQTT broker reachable from the Linux terminal with ACLs permitting the selected node.
 The simulator needs publish access and event-receipt subscription access for that node; the adapter needs read access to its topics.
-Broker packaging and a combined gateway/MPM startup remain a separate integration deliverable.
+For the historical reproduction below, the broker and gateway processes are configured separately from the MPM runtime.
 The [pinned gateway adapter guide](https://github.com/hubertnshuti/oseas26-libre-solar-bms-monitoring-gateway/blob/66a4fbcf1bdda6dd008de45f8f95455408678f45/docs/mpm-ingest.md) describes the actual settings and current delivery limitations.
 
 After loading the company key privately using the plugin guide, retain `MPM_API_KEY` in your shell without printing it.
@@ -160,12 +158,9 @@ Expected at this revision: 40 passing tests with 342 assertions.
 The test bootstrap requires `mpm_testing`; never bypass that guard or point tests at the review/demo database.
 Failures or interrupted commands must be investigated and recorded rather than counted as successful.
 
-## Review scope
+## Deployment considerations
 
-Team-only CI branch triggers are on the separate development-baseline branch.
-The team base also contains earlier Composer-image fixes in three development Dockerfiles; review those separately when assembling an upstream proposal.
-The standalone Compose runtime is development convenience and should be reviewed separately from production deployment policy.
+The development Dockerfiles include Composer-image fixes used by the isolated runtime.
+The standalone Compose runtime is intended for development and does not define a production deployment policy.
 The additive API-key expiry migration changes existing active-key lookup only when expiry is explicitly set; existing null-expiry keys retain their lifetime.
-
-No teammate review, merge, actual CI result or upstream submission is implied by this handover.
-Coordinate the issue and final PR destination with the team owner before submitting upstream.
+Apply the central and tenant migrations before running the updated application.

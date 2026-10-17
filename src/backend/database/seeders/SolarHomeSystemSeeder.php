@@ -45,7 +45,6 @@ class SolarHomeSystemSeeder extends Seeder {
             ->count(5)
             ->for($applianceType)
             ->sequence(
-                // Thank you ChatGPT for generating these names... 🤖
                 [
                     'name' => 'SunPower Home 3000',
                     'price' => 500000,

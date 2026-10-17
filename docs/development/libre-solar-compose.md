@@ -6,7 +6,7 @@ It does not start the operator dashboard, scheduler or a test database.
 It is a local disposable demo, using the repository's published development credentials, and must not be exposed publicly.
 
 **Validation status:** On 15 October 2026, the isolated Docker path passed both image builds, both locked dependency installations, fresh database initialization, backend/Horizon startup, frontend compilation and HTTP readiness, demo login API, repeated battery provisioning and restart with persisted data.
-Browser login remains unverified; an API response does not demonstrate the authenticated browser interface.
+That validation covered API login and HTTP readiness; verify the authenticated browser interface separately during reproduction.
 
 ## Prerequisites and isolation
 

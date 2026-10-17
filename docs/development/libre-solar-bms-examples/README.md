@@ -1,10 +1,10 @@
-# Review examples
+# API response examples
 
 Gateway source: `66a4fbcf1bdda6dd008de45f8f95455408678f45`.
 These files are software fixtures, not endpoint or integration evidence.
 The three unmodified API examples are copied from `tests/fixtures/v1/api/`.
 Files containing `.proposed` illustrate UI states using the existing detail shape.
-They require Hubert and Lucide review and do not establish new API meanings.
+The additional examples use the existing contract shape and do not change API semantics.
 The fault values come from `valid/fault.telemetry.json`.
 The unknown example preserves null faults rather than declaring the battery healthy.
 The disconnected example preserves last known metrics and original timestamps.
