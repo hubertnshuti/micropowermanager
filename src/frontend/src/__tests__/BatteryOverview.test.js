@@ -13,8 +13,6 @@ import Vue from "vue"
 import Overview from "../plugins/libre-solar-bms/modules/Overview/Overview.vue"
 import BatteryRepository from "../plugins/libre-solar-bms/repositories/BatteryRepository.js"
 
-import { EventBus } from "@/shared/eventbus.js"
-
 function deferred() {
   let resolve
   const promise = new Promise((complete) => {
@@ -67,19 +65,29 @@ describe("battery overview script lifecycle (without rendering templates)", () =
     jest.useRealTimers()
   })
 
-  it("completes the generated setup hook with its exact event and no battery request", () => {
-    create(null)
-    const emit = jest.spyOn(EventBus, "$emit")
-    try {
-      instance.finishSetup()
-      expect(emit).toHaveBeenCalledTimes(1)
-      expect(emit).toHaveBeenCalledWith("LibreSolarBms")
-      expect(BatteryRepository.list).not.toHaveBeenCalled()
-      expect(BatteryRepository.detail).not.toHaveBeenCalled()
-      expect(BatteryRepository.events).not.toHaveBeenCalled()
-    } finally {
-      emit.mockRestore()
+  it("ages list status after a failed refresh without replacing the last check", async () => {
+    const checkedAt = "2026-10-15T12:00:00.000Z"
+    const row = {
+      id: 1,
+      node_id: "battery-1",
+      status_checked_at: checkedAt,
+      integration_status: "recent",
+      integration_stale_after_seconds: 150,
     }
+    BatteryRepository.list.mockResolvedValueOnce({
+      data: { data: [row], pagination },
+    })
+    create(null)
+    await instance.initialize()
+    instance.now = Date.parse(checkedAt) + 149999
+    expect(instance.integrationState(instance.batteries[0])).toBe("recent")
+    BatteryRepository.list.mockRejectedValueOnce(
+      new Error("network unavailable"),
+    )
+    await instance.refresh()
+    instance.now = Date.parse(checkedAt) + 150000
+    expect(instance.batteries[0].status_checked_at).toBe(checkedAt)
+    expect(instance.integrationState(instance.batteries[0])).toBe("stale")
   })
 
   it("ignores a delayed battery A detail after navigation to B", async () => {

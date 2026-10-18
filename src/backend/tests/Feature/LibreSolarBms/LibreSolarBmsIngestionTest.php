@@ -9,10 +9,13 @@ use App\Models\MpmPlugin;
 use App\Models\Plugins;
 use App\Models\User;
 use App\Plugins\LibreSolarBms\Models\Battery;
+use App\Plugins\LibreSolarBms\Services\BatteryService;
 use App\Services\DatabaseProxyManagerService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\TestResponse;
+use RuntimeException as ReceiptPersistenceFailure;
 use Tests\TestCase;
 
 class LibreSolarBmsIngestionTest extends TestCase {
@@ -65,6 +68,30 @@ class LibreSolarBmsIngestionTest extends TestCase {
         $this->ingest('summaries', $summary)->assertSuccessful()->assertJsonPath('result', 'duplicate');
         $summary['soc'] = 1;
         $this->ingest('summaries', $summary)->assertStatus(409)->assertJsonPath('code', 'id_conflict');
+        $this->readBattery()->assertJsonPath('data.summary.soc', 74.2);
+    }
+
+    public function testReceiptWriteFailureRollsBackSummaryAndAllowsTheOriginalRequestToRetry(): void {
+        $failReceipt = true;
+        DB::listen(function (QueryExecuted $query) use (&$failReceipt): void {
+            if ($failReceipt && str_starts_with($query->sql, 'insert into `libre_solar_bms_receipts`')) {
+                throw new ReceiptPersistenceFailure('Simulated receipt persistence failure');
+            }
+        });
+        $summary = $this->fixture('normal.summary');
+        try {
+            app(BatteryService::class)->ingest('summary', $summary, json_encode($summary, JSON_THROW_ON_ERROR));
+            $this->fail('The receipt failure should abort ingestion');
+        } catch (ReceiptPersistenceFailure $exception) {
+            $this->assertSame('Simulated receipt persistence failure', $exception->getMessage());
+        } finally {
+            $failReceipt = false;
+        }
+        $this->assertSame(0, DB::connection('tenant')->table('libre_solar_bms_battery_states')->count());
+        $this->assertSame(0, DB::connection('tenant')->table('libre_solar_bms_receipts')->count());
+        $this->ingest('summaries', $summary)->assertSuccessful()->assertJsonPath('result', 'accepted');
+        $this->ingest('summaries', $summary)->assertSuccessful()->assertJsonPath('result', 'duplicate');
+        $this->assertSame(1, DB::connection('tenant')->table('libre_solar_bms_receipts')->count());
         $this->readBattery()->assertJsonPath('data.summary.soc', 74.2);
     }
 
@@ -172,6 +199,24 @@ class LibreSolarBmsIngestionTest extends TestCase {
         }
         $this->assertSame(0, DB::connection('tenant')->table('libre_solar_bms_battery_states')->count());
         $this->assertSame(0, DB::connection('tenant')->table('libre_solar_bms_receipts')->count());
+    }
+
+    public function testBatteryListExposesOriginalStatusCheckAndAgesAtTheSameBoundaryAsDetail(): void {
+        $this->travelTo(now()->setDate(2026, 10, 8)->setTime(14, 0));
+        $this->getJson('/api/libre-solar-bms/batteries', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('data.0.status_checked_at', null)
+            ->assertJsonPath('data.0.integration_stale_after_seconds', 150);
+        $status = $this->fixture('fresh.status');
+        $this->ingest('status', $status)->assertSuccessful();
+        $this->travel(149)->seconds();
+        $this->getJson('/api/libre-solar-bms/batteries', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('data.0.status_checked_at', $status['status_checked_at'])
+            ->assertJsonPath('data.0.integration_status', 'recent');
+        $this->travel(1)->seconds();
+        $this->getJson('/api/libre-solar-bms/batteries', $this->readerHeaders())
+            ->assertOk()->assertJsonPath('data.0.status_checked_at', $status['status_checked_at'])
+            ->assertJsonPath('data.0.integration_status', 'stale');
+        $this->travelBack();
     }
 
     public function testBatteryPaginationRejectsMalformedOrExcessiveInputs(): void {

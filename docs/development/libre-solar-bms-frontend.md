@@ -88,18 +88,28 @@ The upstream frontend entrypoint uses `npm install` and a relative `cd app`; the
 Keep the generated file for subsequent commands in this terminal; a new terminal must recreate the variables and helper or supply the same explicit paths and project name.
 This startup reuses an existing initialized backend and does not demonstrate a clean installation.
 
+## Plugin setup
+
+The registration wizard displays a compact setup card instead of embedding a second battery dashboard.
+It verifies access to at least one registered battery before enabling `Finish plugin setup`.
+An empty list or failed request keeps setup incomplete and offers another check.
+Completing setup records the existing registration step; it does not claim that the source is currently connected.
+Open Batteries from the sidebar for readings, history and freshness information.
+
 ## What the screen means
 
 A simulated source is labeled `Simulated data` on list and detail.
 A zero measurement keeps its number and unit; missing, unsupported or invalid values show `Not available` with a quality reason when supplied.
+Display values use up to three decimal places for volts and amperes and one for percentages and temperatures.
+API and stored values retain their original precision.
 SoH and cycle count are unsupported by the pinned source and are not estimated.
 Battery temperature and electronics temperature have different labels.
 The current detail API exposes the electronics maximum, not individual IC/MOSFET/shunt readings.
 There are no battery controls, health scores or timeseries charts in this view.
 
-The list contains only fields returned by the list API and qualifies status as the assessment at the last successful fetch.
+The list contains only fields returned by the list API, including the original adapter check time and its integration threshold.
 It does not infer faults or temperature from missing list fields.
-Opening a detail allows the browser to age the original source check independently.
+Both list and detail age the original adapter check independently of refresh success.
 A check becomes stale at its API-provided threshold, currently 150 seconds.
 The 15-second source timeout belongs to the adapter; the UI does not apply it to a summary intentionally sent every 60 seconds.
 A 42-second-old summary can coexist with a recent fresh source check.
@@ -155,7 +165,7 @@ Do not run production build concurrently with the development compiler on a memo
 Stop only your own frontend while building.
 
 ```sh
-node node_modules/jest/bin/jest.js --runInBand --config jest.battery.config.js
+npm run test:battery
 node node_modules/eslint/bin/eslint.js --no-fix src/plugins/libre-solar-bms src/__tests__/Battery*.test.js jest.battery.config.js scripts/testing/vueScriptTransformer.js src/ExportedRoutes.js
 node node_modules/prettier/bin/prettier.cjs --check src/plugins/libre-solar-bms src/__tests__/Battery*.test.js jest.battery.config.js scripts/testing/vueScriptTransformer.js src/ExportedRoutes.js src/assets/locales/*.json
 npm run i18n:check-json
@@ -211,11 +221,10 @@ If HTML downloads but browser navigation times out, record the browser URL and e
 
 The following limits apply to the current screens and their API:
 
-- List rows lack the original check timestamp and integration threshold, so list assessments are qualified at last fetch.
 - Detail lacks individual electronics measurements; only the combined maximum is shown.
 - Copied detail examples omit `summary_received_at`; missing fixture receipt time remains unavailable.
 - Gateway revision `66a4fbc` lacks source-status delivery, durable HTTP retry/outbox and stored-event receipts.
-- The focused battery suite does not mount Vue templates, and the frontend quality workflow does not execute it automatically.
+- The focused battery suite runs in CI but does not mount Vue templates; browser acceptance remains a separate check.
 
 Capture browser acceptance, current API integration scenarios and independent installation results with exact revisions.
 An existing backend with retained data does not establish a clean installation.

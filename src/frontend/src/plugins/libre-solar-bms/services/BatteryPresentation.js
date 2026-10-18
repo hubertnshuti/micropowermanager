@@ -1,6 +1,8 @@
 export function formatMetric(value, unit = "", unavailable = "Not available") {
   if (typeof value !== "number" || !Number.isFinite(value)) return unavailable
-  return unit ? `${value} ${unit}` : String(value)
+  const precision = unit === "V" || unit === "A" ? 3 : 1
+  const displayed = Number(value.toFixed(precision))
+  return unit ? `${displayed} ${unit}` : String(displayed)
 }
 
 export function getFaultState(summary) {
@@ -10,8 +12,8 @@ export function getFaultState(summary) {
 }
 
 export function getIntegrationState(detail, now = Date.now()) {
-  if (!detail || !detail.status) return "unknown"
-  const checkedAt = detail.status.status_checked_at
+  if (!detail) return "unknown"
+  const checkedAt = detail.status?.status_checked_at ?? detail.status_checked_at
   const checkedTime =
     typeof checkedAt === "string" ? Date.parse(checkedAt) : NaN
   const threshold = detail.integration_stale_after_seconds

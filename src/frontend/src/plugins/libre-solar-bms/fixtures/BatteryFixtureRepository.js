@@ -59,6 +59,9 @@ export function createFixtureRepository(scenario) {
             observed_at: detail.metric_observed_at,
             source_status: detail.status?.source_status ?? "unknown",
             integration_status: detail.integration_status,
+            status_checked_at: detail.status?.status_checked_at ?? null,
+            integration_stale_after_seconds:
+              detail.integration_stale_after_seconds,
           },
         ]
   function respond(data) {

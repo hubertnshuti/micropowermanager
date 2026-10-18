@@ -41,7 +41,7 @@ import DalyBms from "@/plugins/daly-bms/modules/Overview/Credential.vue"
 import FlutterwavePaymentProvider from "@/plugins/flutterwave-payment-provider/Component.vue"
 import GomeLong from "@/plugins/gome-long-meter/modules/Overview/Credential.vue"
 import Kelin from "@/plugins/kelin-meter/modules/Overview/Credential.vue"
-import LibreSolarBmsOverview from "@/plugins/libre-solar-bms/modules/Overview/Overview.vue"
+import LibreSolarBmsSetup from "@/plugins/libre-solar-bms/modules/Overview/Setup.vue"
 import MicroStar from "@/plugins/micro-star-meter/modules/Overview/Credential.vue"
 import PaystackPaymentProvider from "@/plugins/paystack-payment-provider/Component.vue"
 import PesapalPaymentProvider from "@/plugins/pesapal-payment-provider/Component.vue"
@@ -104,7 +104,7 @@ Vue.component("SparkShs", SparkShs)
 Vue.component("SmsTransactionParser", SmsTransactionParserSetup)
 Vue.component("VodacomMzPaymentProvider", VodacomMzPaymentProvider)
 Vue.component("FlutterwavePaymentProvider", FlutterwavePaymentProvider)
-Vue.component("LibreSolarBms", LibreSolarBmsOverview)
+Vue.component("LibreSolarBms", LibreSolarBmsSetup)
 // NEW PLUGIN PLACEHOLDER (DO NOT REMOVE THIS LINE)
 
 const toArray = (value) => {

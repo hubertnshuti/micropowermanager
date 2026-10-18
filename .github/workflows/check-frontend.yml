@@ -10,6 +10,24 @@ on:
       - team/bms-monitoring
 
 jobs:
+  battery-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.0
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+        working-directory: ./src/frontend
+      - name: Run battery regression tests
+        run: npm run test:battery
+        working-directory: ./src/frontend
+
   eslint:
     runs-on: ubuntu-latest
 

@@ -16,6 +16,15 @@ describe("battery metric presentation", () => {
     (value) => expect(formatMetric(value, "V")).toBe("Not available"),
   )
 
+  it("limits display precision while preserving small electrical differences", () => {
+    expect(formatMetric(70.171234567, "%")).toBe("70.2 %")
+    expect(formatMetric(3.334567, "V")).toBe("3.335 V")
+    expect(formatMetric(0.001, "V")).toBe("0.001 V")
+    expect(formatMetric(-5.123456, "A")).toBe("-5.123 A")
+    expect(formatMetric(23.567, "°C")).toBe("23.6 °C")
+    expect(formatMetric(1000)).toBe("1000")
+  })
+
   it("accepts translated unavailable text", () => {
     expect(formatMetric(null, "%", "Unsupported")).toBe("Unsupported")
   })
@@ -52,6 +61,19 @@ describe("battery integration freshness", () => {
   it("ages the original check at precisely 150 seconds", () => {
     expect(getIntegrationState(detail, checkedTime + 149999)).toBe("recent")
     expect(getIntegrationState(detail, checkedTime + 150000)).toBe("stale")
+  })
+
+  it("ages flattened list responses and treats missing check evidence as unknown", () => {
+    const row = {
+      status_checked_at: detail.status.status_checked_at,
+      integration_status: "recent",
+      integration_stale_after_seconds: 150,
+    }
+    expect(getIntegrationState(row, checkedTime + 149999)).toBe("recent")
+    expect(getIntegrationState(row, checkedTime + 150000)).toBe("stale")
+    expect(
+      getIntegrationState({ ...row, status_checked_at: null }, checkedTime),
+    ).toBe("unknown")
   })
 
   it("does not reset freshness on a recent receipt or metric observation", () => {

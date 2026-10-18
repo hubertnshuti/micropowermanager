@@ -15,13 +15,6 @@
         >
           {{ text("refresh") }}
         </md-button>
-        <md-button
-          v-if="!batteryId && !fixture && batteries.length && !error"
-          :disabled="busy"
-          @click="finishSetup"
-        >
-          {{ text("finishSetup") }}
-        </md-button>
         <span v-if="fetchedAt">
           {{ text("fetched") }}: {{ timestamp(fetchedAt) }}
         </span>
@@ -61,8 +54,8 @@
             <md-table-cell>
               {{
                 text(
-                  battery.integration_status === "recent"
-                    ? "recentAtFetch"
+                  integrationState(battery) === "recent"
+                    ? "recentCheck"
                     : "noRecentUpdate",
                 )
               }}
@@ -289,7 +282,6 @@ import {
   createBatteryService,
 } from "../../services/BatteryService.js"
 
-import { EventBus } from "@/shared/eventbus.js"
 import Widget from "@/shared/Widget.vue"
 
 const fixtureProvider =
@@ -370,14 +362,14 @@ export default {
     clearInterval(this.ageTimer)
   },
   methods: {
-    finishSetup() {
-      EventBus.$emit("LibreSolarBms")
-    },
     text(key, parameters) {
       return this.$t(`battery.${key}`, parameters)
     },
     metric(value, unit) {
       return formatMetric(value, unit, this.text("unavailable"))
+    },
+    integrationState(battery) {
+      return getIntegrationState(battery, this.now)
     },
     eventLabelKey: getEventLabelKey,
     sourceLabel(source) {

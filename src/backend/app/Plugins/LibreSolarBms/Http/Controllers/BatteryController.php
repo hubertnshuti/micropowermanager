@@ -33,7 +33,10 @@ class BatteryController extends Controller {
             return ['id' => $battery->id, 'node_id' => $battery->node_id, 'source' => $battery->source,
                 'label' => $battery->label, 'soc' => $summary?->soc, 'soh' => $summary?->soh,
                 'cycle_count' => $summary?->cycle_count, 'source_status' => $detail['status']->source_status ?? 'unknown',
-                'integration_status' => $detail['integration_status'], 'observed_at' => $detail['metric_observed_at']];
+                'integration_status' => $detail['integration_status'],
+                'status_checked_at' => $detail['status']?->status_checked_at,
+                'integration_stale_after_seconds' => $detail['integration_stale_after_seconds'],
+                'observed_at' => $detail['metric_observed_at']];
         });
 
         return response()->json(['data' => $data, 'pagination' => ['page' => $page, 'per_page' => $perPage,
